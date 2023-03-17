@@ -5,7 +5,9 @@
 // ignore_for_file: public_member_api_docs
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'dart:convert';
 
 class GraphView extends StatefulWidget {
   const GraphView({super.key});
@@ -15,35 +17,13 @@ class GraphView extends StatefulWidget {
 }
 
 class _GraphViewState extends State<GraphView> {
-  late final WebViewController controller;
+  late WebViewController _controller;
+  late WebViewController _webViewController;
+  String filePath = 'assets/www/index.html';
 
   @override
   void initState() {
     super.initState();
-
-    // #docregion webview_controller
-    controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0x00000000))
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onProgress: (int progress) {
-            // Update loading bar.
-          },
-          onPageStarted: (String url) {},
-          onPageFinished: (String url) {},
-          onWebResourceError: (WebResourceError error) {},
-          onNavigationRequest: (NavigationRequest request) {
-            if (request.url.startsWith('https://www.youtube.com/')) {
-              return NavigationDecision.prevent;
-            }
-            return NavigationDecision.navigate;
-          },
-        ),
-      );
-
-    controller.loadFlutterAsset('assets/www/index.html');
-    // #enddocregion webview_controller
   }
 
   // #docregion webview_widget
@@ -51,8 +31,23 @@ class _GraphViewState extends State<GraphView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Flutter Simple Example')),
-      body: WebViewWidget(controller: controller),
+      body: WebView(
+        initialUrl: '',
+        zoomEnabled: true,
+        javascriptMode: JavascriptMode.unrestricted,
+        onWebViewCreated: (WebViewController webViewController) {
+          _webViewController = webViewController;
+          _loadHtmlFromAssets();
+        },
+      ),
     );
   }
+
   // #enddocregion webview_widget
+  _loadHtmlFromAssets() async {
+    String fileHtmlContents = await rootBundle.loadString(filePath);
+    _webViewController.loadUrl(Uri.dataFromString(fileHtmlContents,
+            mimeType: 'text/html', encoding: Encoding.getByName('utf-8'))
+        .toString());
+  }
 }
